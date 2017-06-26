@@ -1,7 +1,7 @@
-import { Panel} from 'react-bootstrap'
+import { Panel} from 'react-bootstrap';
 import React, { Component } from 'react';
-import tcgaData from './tcgaData.json'
-import {VictoryBar, VictoryAxis, VictoryChart, VictoryLine} from 'victory';
+import tcgaData from './tcgaData.json';
+import {VictoryBar, VictoryAxis, VictoryChart, VictoryLine, VictoryLabel} from 'victory';
 import * as d3 from "d3-array";
 
 class ScoreChart extends Component {
@@ -13,7 +13,7 @@ class ScoreChart extends Component {
     return cancerScores;
   }
 
-  // format tcga json data for victory
+  // format data for VictoryBar
   getChartData(cancer) {
     const histogram = d3.histogram()(this.getCancerScores(cancer));
     let chartData = [];
@@ -26,7 +26,7 @@ class ScoreChart extends Component {
     return chartData;
   }
 
-
+  //supposed to make VictoryBar more histogram-ish by removing gaps between bars
   getBinWidth(cancer) {
     const targetHistogram = d3.histogram()(this.getCancerScores(cancer));
     const targetMin = targetHistogram[0].x0;
@@ -36,20 +36,13 @@ class ScoreChart extends Component {
     const referenceMax =  referenceHistogram[referenceHistogram.length - 1].x1;
     const referenceMin = referenceHistogram[0].x0;
 
-    const range = Math.max(targetMax, referenceMax, this.props.patientScore) - Math.min(targetMin, referenceMin, this.props.patientScore);
+    const range = Math.max(targetMax, referenceMax, this.props.patientScore) -
+                  Math.min(targetMin, referenceMin, this.props.patientScore);
     const binwidth = (targetHistogram[1].x1 - targetHistogram[1].x0)/range;
     return binwidth;
   }
 
-  shouldComponentUpdate(nextProps, nextState) {
-    let chartData = this.getChartData(nextProps.targetCancer);
-    return (
-      this.props.patientScore !== nextProps.patientScore
-      || chartData.length !== 1
-    )
-  }
-
-  // get y-coordinates for patient score line
+  // get y-coordinates for patient score vline
   getLineLength(cancer) {
     let scoreFrequencies = [];
     const chartData = this.getChartData(cancer);
@@ -58,12 +51,24 @@ class ScoreChart extends Component {
     return lineLength;
   }
 
+//update if score changes or if cancer type changes to a valid tcga entry
+  shouldComponentUpdate(nextProps, nextState) {
+    let chartData = this.getChartData(nextProps.targetCancer);
+    return (
+      this.props.patientScore !== nextProps.patientScore
+      || chartData.length !== 1
+    );
+  }
+
   render() {
     if (isNaN(this.props.patientScore)) return(null);
     if (this.props.targetCancer === '') return(null);
     else return (
       <div>
-        <Panel header = {this.props.scoreLabel + ": " + this.props.patientScore} style={{width: '45%', float: 'left', margin: 5}} bsStyle = "primary">
+        <Panel
+          header = {this.props.scoreLabel + ": " + this.props.patientScore}
+          style={{width: '45%', float: 'left', margin: 5}}
+          bsStyle = "primary">
           <VictoryChart>
             <VictoryBar
               data= {this.getChartData(this.props.targetCancer)}
@@ -71,16 +76,19 @@ class ScoreChart extends Component {
               y="frequency"
               interpolation="step"
               style={{
-                data: {fill:"navajowhite", width:350 * this.getBinWidth(this.props.targetCancer), strokeWidth: 1, stroke: "black"},
-                stroke: "black"
+                data: {fill:"navajowhite",
+                       width:350 * this.getBinWidth(this.props.targetCancer),
+                }
               }}
-            />
+        />
             <VictoryBar
               data= {this.getChartData('OV')}
               x="score"
               y= {(d) => -(d.frequency)}
               style={{
-                data: {fill: "tomato", width:350 * this.getBinWidth('OV'), strokeWidth: 1, stroke: "black"}
+                data: {fill: "tomato",
+                       width:350 * this.getBinWidth('OV')
+                }
               }}
             />
             <VictoryAxis
@@ -92,11 +100,14 @@ class ScoreChart extends Component {
              tickLabelComponent={<VictoryLabel text={(datum) => Math.abs(datum)}/>}
             />
             <VictoryLine
-             data = {[{x:this.props.patientScore, y:-this.getLineLength('OV')}, {x:this.props.patientScore, y:this.getLineLength(this.props.targetCancer)}]}
+             data = {[
+               {x:this.props.patientScore, y:-this.getLineLength('OV')},
+               {x:this.props.patientScore, y:this.getLineLength(this.props.targetCancer)}
+             ]}
             />
           </VictoryChart>
         </Panel>
-        </div>
+      </div>
       );
   }
 }

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import ScoreChart from './Components/ScoreChart';
-import {Col, Jumbotron} from 'react-bootstrap'
+import {Col, Jumbotron} from 'react-bootstrap';
 
-//renders form, renders corresponding chart from inputted scores
+//renders form, renders charts from inputted scores
 class App extends Component {
 
   constructor() {

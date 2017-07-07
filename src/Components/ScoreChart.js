@@ -2,15 +2,15 @@ import {Panel} from 'react-bootstrap';
 import React, {Component} from 'react';
 import tcgaData from './tcgaData.json';
 import {VictoryBar, VictoryAxis, VictoryChart, VictoryLine, VictoryLabel} from 'victory';
-import * as d3 from "d3-array";
 
+//get array of scores from tcgaData.json
 const getCancerScores = function(cancer, score) {
   const cancerData = tcgaData.filter(function(e) {return e.cancer === cancer});
   const cancerScores = cancerData.map((e) => e[score]);
   return cancerScores;
 }
 
-// format data for VictoryBar
+//bin array for VictoryBar
 const getChartData = function(cancer, score) {
   const histogram = d3.histogram()(getCancerScores(cancer, score));
   let chartData = histogram.map(function(i) {
@@ -31,20 +31,19 @@ const getLineLength = function(cancer, score) {
 }
 
 class ScoreChart extends Component {
-
   //make VictoryBar more histogram-ish by removing gaps between bars
   getBinWidth(cancer) {
-    const targetHistogram = d3.histogram()(getCancerScores(cancer, this.props.scoreName));
-    const targetMin = targetHistogram[0].x0;
-    const targetMax =  targetHistogram[targetHistogram.length - 1].x1;
+    const targetMin = Math.min.apply(null, getCancerScores(cancer,this.props.scoreName));
+    const targetMax =  Math.max.apply(null, getCancerScores(cancer,this.props.scoreName));
 
-    const referenceHistogram = d3.histogram()(getCancerScores('OV', this.props.scoreName));
-    const referenceMax =  referenceHistogram[referenceHistogram.length - 1].x1;
-    const referenceMin = referenceHistogram[0].x0;
+    const referenceMax =  Math.max.apply(null, getCancerScores('OV',this.props.scoreName))
+    const referenceMin = Math.min.apply(null, getCancerScores('OV',this.props.scoreName));
 
     const range = Math.max(targetMax, referenceMax, this.props.patientScore) -
                   Math.min(targetMin, referenceMin, this.props.patientScore);
-    const binwidth = (targetHistogram[1].x1 - targetHistogram[1].x0)/range;
+
+    const binwidth = (targetMax - targetMin)/(15*range);
+    console.log(this.props.scoreName, binwidth, range);
     return binwidth;
   }
 
@@ -83,7 +82,9 @@ class ScoreChart extends Component {
               y= {(d) => -(d.frequency)}
               style={{
                 data: {fill: "tomato",
-                       width:350 * this.getBinWidth('OV')
+                       width:350 * this.getBinWidth('OV'),
+                       stroke: "black",
+                      strokeWidth: 1,
                 }
               }}
             />

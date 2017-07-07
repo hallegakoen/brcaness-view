@@ -42,10 +42,19 @@ class App extends Component {
               TCGA cancer type:
               <input
                 name="cancerType"
+                list="cancerTypes"
                 type="string"
-                label = "cancerType"
+                label="cancerType"
                 onChange={this.handleChange}
                 value={this.state.cancerType}/>
+              <datalist id="cancerTypes">
+                <option value="OV"/>
+                <option value="BRCA"/>
+                <option value="LUAD"/>
+                <option value="TGCT"/>
+                <option value="BLCA"/>
+                <option value="UCEC"/>
+              </datalist>
             </Jumbotron>
         </Col>
         <Col xs = {12} sm = {6} md = {10} lg = {10}>

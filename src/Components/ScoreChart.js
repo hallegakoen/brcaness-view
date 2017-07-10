@@ -12,15 +12,18 @@ const getCancerScores = function(cancer, score) {
 
 //bin array for VictoryBar
 const getChartData = function(cancer, score) {
-  const histogram = d3.histogram()(getCancerScores(cancer, score));
-  let chartData = histogram.map(function(i) {
-    return({
-              score: (i.x0 + i.x1)/2,
-              frequency: i.length
-    });
-  });
-  return chartData;
-}
+    const scores = getCancerScores(cancer, score);
+    const minScore = Math.min.apply(null, scores);
+    const binwidth = (Math.max.apply(null, scores)-minScore)/15;
+    let chartData = [];
+    for (let i=0; i<15; i++) {
+      chartData.push({
+        score: ((minScore+i*binwidth) + minScore+(i+1)*binwidth)/2,
+        frequency: scores.filter(x => (x-(minScore+i*binwidth))*(x-(minScore+(i+1)*binwidth)) < 0).length
+      });
+    }
+    return chartData;
+  }
 
 // get y-coordinates for patient score vline
 const getLineLength = function(cancer, score) {
@@ -30,29 +33,32 @@ const getLineLength = function(cancer, score) {
   return lineLength;
 }
 
+//make VictoryBar more histogram-ish by removing gaps between bars
+const getBinWidth = function(targetCancer, refCancer, scoreName, score) {
+  const targetScores = getCancerScores(targetCancer, scoreName);
+  const refScores = getCancerScores(refCancer, scoreName);
+  const targetMin = Math.min.apply(null, targetScores);
+  const targetMax =  Math.max.apply(null, targetScores);
+  const referenceMax =  Math.max.apply(null, refScores)
+  const referenceMin = Math.min.apply(null, refScores);
+  const range = Math.max(targetMax, referenceMax, score) -
+                Math.min(targetMin, referenceMin, score);
+  const binwidth = 350*(Math.max(targetMax, referenceMax) - Math.min(targetMin, referenceMin))/(15*range);
+  return binwidth;
+}
+
 class ScoreChart extends Component {
-  //make VictoryBar more histogram-ish by removing gaps between bars
-  getBinWidth(cancer) {
-    const targetMin = Math.min.apply(null, getCancerScores(cancer,this.props.scoreName));
-    const targetMax =  Math.max.apply(null, getCancerScores(cancer,this.props.scoreName));
-
-    const referenceMax =  Math.max.apply(null, getCancerScores('OV',this.props.scoreName))
-    const referenceMin = Math.min.apply(null, getCancerScores('OV',this.props.scoreName));
-
-    const range = Math.max(targetMax, referenceMax, this.props.patientScore) -
-                  Math.min(targetMin, referenceMin, this.props.patientScore);
-
-    const binwidth = (targetMax - targetMin)/(15*range);
-    console.log(this.props.scoreName, binwidth, range);
-    return binwidth;
+  constructor() {
+    super();
+    this.state = {significant: false};
   }
 
 //update if score changes or if cancer type changes to a valid tcga entry
   shouldComponentUpdate(nextProps, nextState) {
-    let chartData = getChartData(nextProps.targetCancer, this.props.scoreName);
+    let chartData = getCancerScores(nextProps.targetCancer, this.props.scoreName);
     return (
       this.props.patientScore !== nextProps.patientScore
-      || chartData.length !== 1
+      || chartData.length !== 0
     );
   }
 
@@ -71,8 +77,9 @@ class ScoreChart extends Component {
               x="score"
               y="frequency"
               style={{
-                data: {fill:"navajowhite",
-                       width:350 * this.getBinWidth(this.props.targetCancer),
+                data: {
+                  fill:"navajowhite",
+                  width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore)
                 }
               }}
         />
@@ -81,10 +88,9 @@ class ScoreChart extends Component {
               x="score"
               y= {(d) => -(d.frequency)}
               style={{
-                data: {fill: "tomato",
-                       width:350 * this.getBinWidth('OV'),
-                       stroke: "black",
-                      strokeWidth: 1,
+                data: {
+                  fill: "tomato",
+                  width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore)
                 }
               }}
             />

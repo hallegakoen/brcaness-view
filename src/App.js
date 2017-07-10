@@ -1,73 +1,66 @@
 import React, { Component } from 'react';
-import ScoreChart from './Components/ScoreChart';
 import {Col, Jumbotron} from 'react-bootstrap';
+import tcgaData from './Components/tcgaData.json';
+import ScoreDisplay from './Components/ScoreDisplay'
 
-//renders form, renders charts from inputted scores
 class App extends Component {
-
   constructor() {
     super();
-    this.state = {hrdScore: '',
-                  parpi7Score: '',
-                  cancerType: ''};
+    this.state = {
+      scores: {
+        hrd: '',
+        parpi7: ''
+      },
+      cancerType: ''
+    };
     this.handleChange = this.handleChange.bind(this);
+    this.handleScoreChange = this.handleScoreChange.bind(this);
   }
 
-  handleChange(event) {
-    const target = event.target;
-    const name = target.name;
-    this.setState({[name]: event.target.value});
+  handleScoreChange(e) {
+    const updatedScores = Object.assign({},this.state.scores,{[e.target.name]: e.target.value});
+    this.setState({scores: updatedScores});
+  }
+
+  handleChange(e) {
+    this.setState({[e.target.name]: e.target.value});
   }
 
   render() {
+    const cancerTypes = [...new Set(tcgaData.map(a => a.cancer))];
+    const options = cancerTypes.map(function(type) {
+      return(<option key={type}>{type}</option>)
+    });
+
     return (
       <div>
         <Col xs = {12} sm = {6} md = {2} lg = {2}>
             <Jumbotron>
               HRD:
               <input
-                name="hrdScore"
+                name="hrd"
                 type="number"
-                label = "HRD"
-                onChange={this.handleChange}
-                value={this.state.hrdScore}/>
+                onChange={this.handleScoreChange}
+                value={this.state.scores.hrd}/>
               <br />
               PARPi-7:
               <input
-                name="parpi7Score"
+                name="parpi7"
                 type="number"
-                label = "PARPi-7"
-                onChange={this.handleChange}
-                value={this.state.parpi7Score}/>
+                onChange={this.handleScoreChange}
+                value={this.state.scores.parpi7}/>
               TCGA cancer type:
-              <input
+              <select
                 name="cancerType"
-                list="cancerTypes"
                 type="string"
-                label="cancerType"
                 onChange={this.handleChange}
-                value={this.state.cancerType}/>
-              <datalist id="cancerTypes">
-                <option value="OV"/>
-                <option value="BRCA"/>
-                <option value="LUAD"/>
-                <option value="TGCT"/>
-                <option value="BLCA"/>
-                <option value="UCEC"/>
-              </datalist>
+                value={this.state.cancerType}>
+                {options}
+              </select>
             </Jumbotron>
         </Col>
         <Col xs = {12} sm = {6} md = {10} lg = {10}>
-          <ScoreChart
-            scoreLabel = "HRD"
-            scoreName = "hrd"
-            patientScore = {parseFloat(this.state.hrdScore)}
-            targetCancer = {this.state.cancerType}/>
-          <ScoreChart
-            scoreLabel = "PARPi-7"
-            scoreName = "parpi7"
-            patientScore = {parseFloat(this.state.parpi7Score)}
-            targetCancer = {this.state.cancerType}/>
+            <ScoreDisplay patientScores = {this.state.scores} targetCancer = {this.state.cancerType}/>
         </Col>
       </div>
     )

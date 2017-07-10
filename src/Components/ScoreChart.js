@@ -11,23 +11,30 @@ const getCancerScores = function(cancer, score) {
 }
 
 //bin array for VictoryBar
-const getChartData = function(cancer, score) {
-    const scores = getCancerScores(cancer, score);
-    const minScore = Math.min.apply(null, scores);
-    const binwidth = (Math.max.apply(null, scores)-minScore)/15;
+const getChartData = function(cancer, refCancer, score) {
+  //rewrite minscore and binwidth
+    const targetScores = getCancerScores(cancer, score);
+    const refScores = getCancerScores(refCancer, score);
+    const minTargetScore = Math.min.apply(null, targetScores);
+    const minRefScore = Math.min.apply(null, refScores);
+    const minScore = Math.min(minTargetScore, minRefScore)
+    const maxTargetScore = Math.max.apply(null, targetScores);
+    const maxRefScore = Math.max.apply(null, refScores);
+    const maxScore = Math.max(maxTargetScore, maxRefScore)
+    const binwidth = (maxScore-minScore)/15;
     let chartData = [];
     for (let i=0; i<15; i++) {
       chartData.push({
         score: ((minScore+i*binwidth) + minScore+(i+1)*binwidth)/2,
-        frequency: scores.filter(x => (x-(minScore+i*binwidth))*(x-(minScore+(i+1)*binwidth)) < 0).length
+        frequency: targetScores.filter(x => (x-(minScore+i*binwidth))*(x-(minScore+(i+1)*binwidth)) < 0).length
       });
     }
     return chartData;
   }
 
 // get y-coordinates for patient score vline
-const getLineLength = function(cancer, score) {
-  const chartData = getChartData(cancer, score);
+const getLineLength = function(cancer, refCancer, score) {
+  const chartData = getChartData(cancer, refCancer, score);
   let scoreFrequencies = chartData.map (function(i) {return (i.frequency)});
   const lineLength = (Math.max.apply(null,scoreFrequencies) * 1.2);
   return lineLength;
@@ -48,10 +55,6 @@ const getBinWidth = function(targetCancer, refCancer, scoreName, score) {
 }
 
 class ScoreChart extends Component {
-  constructor() {
-    super();
-    this.state = {significant: false};
-  }
 
 //update if score changes or if cancer type changes to a valid tcga entry
   shouldComponentUpdate(nextProps, nextState) {
@@ -70,27 +73,31 @@ class ScoreChart extends Component {
         <Panel
           header = {this.props.scoreLabel + ": " + this.props.patientScore}
           style={{width: '45%', float: 'left', margin: 5}}
-          bsStyle = "primary">
+          bsStyle={this.props.panelColor}>
           <VictoryChart>
             <VictoryBar
-              data= {getChartData(this.props.targetCancer, this.props.scoreName)}
+              data= {getChartData(this.props.targetCancer, 'OV', this.props.scoreName)}
               x="score"
               y="frequency"
               style={{
                 data: {
                   fill:"navajowhite",
-                  width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore)
+                  width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore),
+                  stroke: "black",
+                  strokeWidth: 0.5
                 }
               }}
         />
             <VictoryBar
-              data= {getChartData('OV', this.props.scoreName)}
+              data= {getChartData('OV', this.props.targetCancer, this.props.scoreName)}
               x="score"
               y= {(d) => -(d.frequency)}
               style={{
                 data: {
                   fill: "tomato",
-                  width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore)
+                  width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore),
+                  stroke: "black",
+                  strokeWidth: 0.5
                 }
               }}
             />
@@ -104,19 +111,19 @@ class ScoreChart extends Component {
             />
             <VictoryLine
              data = {[
-               {x:this.props.patientScore, y:-getLineLength('OV', this.props.scoreName)},
-               {x:this.props.patientScore, y:getLineLength(this.props.targetCancer, this.props.scoreName)}
+               {x:this.props.patientScore, y:-getLineLength('OV', this.props.targetCancer, this.props.scoreName)},
+               {x:this.props.patientScore, y:getLineLength(this.props.targetCancer, 'OV', this.props.scoreName)}
              ]}
             />
             <VictoryLine
              data = {[
-               {x:this.props.cutoffScore, y:-getLineLength('OV', this.props.scoreName)},
-               {x:this.props.cutoffScore, y:getLineLength(this.props.targetCancer, this.props.scoreName)}
+               {x:this.props.cutoffScore, y:-getLineLength('OV', this.props.targetCancer, this.props.scoreName)},
+               {x:this.props.cutoffScore, y:getLineLength(this.props.targetCancer, 'OV', this.props.scoreName)}
                ]}
              style={{
                data: {
                  stroke: "gray",
-                 strokeWidth: 0.5 
+                 strokeWidth: 0.75
                }
              }}
             />

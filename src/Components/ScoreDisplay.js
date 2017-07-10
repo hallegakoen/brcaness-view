@@ -9,12 +9,16 @@ const cutoffScores = {
 const sortCharts = function(scores) {
   const patientScores = scores;
   let keys = Object.keys(patientScores).sort(function(a,b) {
-    debugger;
     if (patientScores[a] < cutoffScores[a] && patientScores[b] >= cutoffScores[b]) return 1;
     if (patientScores[a] >= cutoffScores[a] && patientScores[b] < cutoffScores[b]) return -1;
     else return 0;
   });
   return keys;
+}
+
+const getPanelColor = function(patientScores, score) {
+  if (patientScores[score] >= cutoffScores[score]) return 'danger';
+  else return 'info';
 }
 
 class ScoreDisplay extends Component {
@@ -29,6 +33,7 @@ class ScoreDisplay extends Component {
         scoreLabel = {k}
         scoreName = {k}
         cutoffScore = {cutoffScores[k]}
+        panelColor = {getPanelColor(this.props.patientScores,k)}
         key = {k}/>);
     }
 

@@ -9,7 +9,7 @@ class App extends Component {
     this.state = {
       scores: {
         hrd: '',
-        parpi7: ''
+        parpi7: '',
       },
       cancerType: ''
     };
@@ -28,7 +28,7 @@ class App extends Component {
 
   render() {
     const cancerTypes = [...new Set(tcgaData.map(a => a.cancer))];
-    const options = cancerTypes.map(function(type) {
+    const cancerList = cancerTypes.map(function(type) {
       return(<option key={type}>{type}</option>)
     });
 
@@ -49,13 +49,25 @@ class App extends Component {
                 type="number"
                 onChange={this.handleScoreChange}
                 value={this.state.scores.parpi7}/>
+          {/*    RPS:
+              <input
+                name="rps"
+                type="number"
+                onChange={this.handleScoreChange}
+                value={this.state.scores.rps}/>
+              LST:
+              <input
+                name="lst"
+                type="number"
+                onChange={this.handleScoreChange}
+                value={this.state.scores.lst}/> */}
               TCGA cancer type:
               <select
                 name="cancerType"
                 type="string"
                 onChange={this.handleChange}
                 value={this.state.cancerType}>
-                {options}
+                {cancerList}
               </select>
             </Jumbotron>
         </Col>

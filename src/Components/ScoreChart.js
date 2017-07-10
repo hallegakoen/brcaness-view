@@ -108,6 +108,18 @@ class ScoreChart extends Component {
                {x:this.props.patientScore, y:getLineLength(this.props.targetCancer, this.props.scoreName)}
              ]}
             />
+            <VictoryLine
+             data = {[
+               {x:this.props.cutoffScore, y:-getLineLength('OV', this.props.scoreName)},
+               {x:this.props.cutoffScore, y:getLineLength(this.props.targetCancer, this.props.scoreName)}
+               ]}
+             style={{
+               data: {
+                 stroke: "gray",
+                 strokeWidth: 0.5 
+               }
+             }}
+            />
           </VictoryChart>
         </Panel>
       </div>

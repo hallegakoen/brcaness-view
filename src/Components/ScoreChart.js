@@ -5,28 +5,48 @@ import {VictoryBar, VictoryAxis, VictoryChart, VictoryLine, VictoryLabel} from '
 
 //get array of scores from tcgaData.json
 const getCancerScores = function(cancer, score) {
-  const cancerData = tcgaData.filter(function(e) {return e.cancer === cancer});
+  const cancerData = tcgaData.filter(function(e) {return e.cancer === cancer}); //add filtering
   const cancerScores = cancerData.map((e) => e[score]);
   return cancerScores;
 }
 
+const getPercentile = function(cancer, score, scoreValue) {
+  const data = getCancerScores(cancer, score);
+  data.sort(function(a,b) {return a-b});
+  return 100*data.indexOf(scoreValue)/data.length;
+}
+
+// const binData = {
+//   targetScores: function(cancer, score) {getCancerScores(cancer, score)},
+//   refScores: function(refCancer, score) {getCancerScores(refCancer, score)},
+//   minTargetScore: Math.min.apply(null, this.targetScores),
+//   minRefScore: Math.min.apply(null, this.refScores),
+//   minScore: Math.min(this.minTargetScore, this.minRefScore),
+//   maxTargetScore: Math.max.apply(null, this.targetScores),
+//   maxRefScore: Math.max.apply(null, this.refScores),
+//   maxScore: Math.max(this.maxTargetScore, this.maxRefScore),
+//   binwidth: (this.maxScore-this.minScore)/15,
+//   range: Math.max(targetMax, referenceMax, score) - Math.min(targetMin, referenceMin, score),
+//   renderedBinwidth: 350*(Math.max(targetMax, referenceMax) - Math.min(targetMin, referenceMin))/(15*this.range),
+//
+// }
 //bin array for VictoryBar
 const getChartData = function(cancer, refCancer, score) {
   //rewrite minscore and binwidth
     const targetScores = getCancerScores(cancer, score);
     const refScores = getCancerScores(refCancer, score);
-    const minTargetScore = Math.min.apply(null, targetScores);
-    const minRefScore = Math.min.apply(null, refScores);
-    const minScore = Math.min(minTargetScore, minRefScore)
-    const maxTargetScore = Math.max.apply(null, targetScores);
-    const maxRefScore = Math.max.apply(null, refScores);
-    const maxScore = Math.max(maxTargetScore, maxRefScore)
-    const binwidth = (maxScore-minScore)/15;
+    const targetMin = Math.min.apply(null, targetScores);
+    const refMin = Math.min.apply(null, refScores);
+    const min = Math.min(targetMin, refMin);
+    const targetMax = Math.max.apply(null, targetScores);
+    const refMax = Math.max.apply(null, refScores);
+    const max = Math.max(targetMax, refMax);
+    const binwidth = (max-min)/15;
     let chartData = [];
     for (let i=0; i<15; i++) {
       chartData.push({
-        score: ((minScore+i*binwidth) + minScore+(i+1)*binwidth)/2,
-        frequency: targetScores.filter(x => (x-(minScore+i*binwidth))*(x-(minScore+(i+1)*binwidth)) < 0).length
+        score: ((min+i*binwidth) + min+(i+1)*binwidth)/2,
+        frequency: targetScores.filter(x => (x-(min+i*binwidth))*(x-(min+(i+1)*binwidth)) < 0).length
       });
     }
     return chartData;
@@ -83,8 +103,6 @@ class ScoreChart extends Component {
                 data: {
                   fill:"navajowhite",
                   width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore),
-                  stroke: "black",
-                  strokeWidth: 0.5
                 }
               }}
         />
@@ -96,24 +114,25 @@ class ScoreChart extends Component {
                 data: {
                   fill: "tomato",
                   width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore),
-                  stroke: "black",
-                  strokeWidth: 0.5
                 }
               }}
             />
             <VictoryAxis
               style={{axis:{width:450}}}
-              domainPadding = {0}
+              domainPadding={0}
+              axisLabelComponent={<VictoryLabel text={this.props.scoreName} x={425} dy={-30} textAnchor="start"/>}
             />
             <VictoryAxis
              dependentAxis
-             tickLabelComponent={<VictoryLabel text={(datum) => Math.abs(datum)}/>}
+             tickLabelComponent={<VictoryLabel text={(datum) => Math.abs(datum)}
+             />}
             />
             <VictoryLine
              data = {[
                {x:this.props.patientScore, y:-getLineLength('OV', this.props.targetCancer, this.props.scoreName)},
                {x:this.props.patientScore, y:getLineLength(this.props.targetCancer, 'OV', this.props.scoreName)}
              ]}
+             a
             />
             <VictoryLine
              data = {[

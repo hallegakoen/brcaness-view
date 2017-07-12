@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
-import {Col, Jumbotron} from 'react-bootstrap';
+import {Col, Jumbotron, Button, Form} from 'react-bootstrap';
 import tcgaData from './Components/tcgaData.json';
-import ScoreDisplay from './Components/ScoreDisplay'
+import ScoreDisplay from './Components/ScoreDisplay';
+
 
 class App extends Component {
   constructor() {
@@ -10,11 +11,27 @@ class App extends Component {
       scores: {
         hrd: '',
         parpi7: '',
+        rps: '',
+        lst: '',
+        ai: '',
+        hrd_loh: ''
       },
-      cancerType: ''
+      cancerType: '',
+      colorcode: 'default',
+      showModal:'false'
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleScoreChange = this.handleScoreChange.bind(this);
+    this.close = this.close.bind(this);
+    this.open = this.open.bind(this);
+  }
+
+ close() {
+   this.setState({ showModal: false });
+  }
+
+ open() {
+   this.setState({ showModal: true });
   }
 
   handleScoreChange(e) {
@@ -26,7 +43,9 @@ class App extends Component {
     this.setState({[e.target.name]: e.target.value});
   }
 
+
   render() {
+    require('./demo');
     const cancerTypes = [...new Set(tcgaData.map(a => a.cancer))];
     const cancerList = cancerTypes.map(function(type) {
       return(<option key={type}>{type}</option>)
@@ -36,39 +55,74 @@ class App extends Component {
       <div>
         <Col xs = {12} sm = {6} md = {2} lg = {2}>
             <Jumbotron>
+            <Button
+              bsStyle="primary"
+              block
+              onClick={this.open}>Select TCGA patient...</Button>
+            <p/>
+            <h3>Or enter data below:</h3>
+            <p/>
+            TCGA cancer type:
+            <select
+              name="cancerType"
+              type="string"
+              onChange={this.handleChange}
+              value={this.state.cancerType}>
+              <option> -- select an option -- </option>
+              {cancerList}
+            </select>
+            <p/>
+            <Form inline>
               HRD:
               <input
+                bsSize="sm"
                 name="hrd"
                 type="number"
                 onChange={this.handleScoreChange}
                 value={this.state.scores.hrd}/>
-              <br />
               PARPi-7:
               <input
+                bsSize="sm"
                 name="parpi7"
                 type="number"
                 onChange={this.handleScoreChange}
                 value={this.state.scores.parpi7}/>
-          {/*    RPS:
+             RPS:
               <input
+                bsSize="sm"
                 name="rps"
                 type="number"
                 onChange={this.handleScoreChange}
                 value={this.state.scores.rps}/>
               LST:
               <input
+                bsSize="sm"
                 name="lst"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.lst}/> */}
-              TCGA cancer type:
-              <select
-                name="cancerType"
-                type="string"
-                onChange={this.handleChange}
-                value={this.state.cancerType}>
-                {cancerList}
-              </select>
+                value={this.state.scores.lst}/>
+              NtAI:
+              <input
+                bsSize="sm"
+                name="ai"
+                type="number"
+                onChange={this.handleScoreChange}
+                value={this.state.scores.ai}/>
+              LOH:
+              <input
+                bsSize="sm"
+                name="hrd_loh"
+                type="number"
+                onChange={this.handleScoreChange}
+                value={this.state.scores.hrd_loh}/>
+              </Form>
+
+              <p/>
+              <input value="default" type="radio" checked="checked" name="colorcode"/>Default View
+              <br/>
+              <input value="percentSensitive" type="radio" name="colorcode"/>Show % platinum response at each score
+              <br/>
+              <input value="sensitivity" type="radio" name="colorcode"/>Show platinum response at each score
             </Jumbotron>
         </Col>
         <Col xs = {12} sm = {6} md = {10} lg = {10}>

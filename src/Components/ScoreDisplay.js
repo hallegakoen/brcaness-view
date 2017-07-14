@@ -2,12 +2,12 @@ import React, { Component } from 'react';
 import ScoreChart from './ScoreChart';
 
 const cutoffScores = {
-  hrd: 42,
-  parpi7: 1.03,
-  rps: 0,
-  lst: 0,
-  ai: 0,
-  hrd_loh: 0
+  HRD: 42,
+  PARPi7: 1.03,
+  RPS: 0,
+  LST: 0,
+  AI: 0,
+  LOH: 0
 }
 
 const sortCharts = function(scores) {

@@ -10,10 +10,14 @@ const getCancerScores = function(cancer, score) {
   return cancerScores;
 }
 
-const getPercentile = function(cancer, score, scoreValue) {
-  const data = getCancerScores(cancer, score);
+const getPercentile = function(y, cancer, score, scoreValue) {
+  let cancerType;
+  if (y > 0) cancerType = cancer;
+  else cancerType = 'OV';
+  const data = getCancerScores(cancerType, score);
+  let closestValue = data.sort( (a, b) => Math.abs(scoreValue - a) - Math.abs(scoreValue - b) )[0];
   data.sort(function(a,b) {return a-b});
-  return 100*data.indexOf(scoreValue)/data.length;
+  return (100*data.indexOf(closestValue)/data.length).toFixed(2);
 }
 
 // const binData = {
@@ -132,7 +136,8 @@ class ScoreChart extends Component {
                {x:this.props.patientScore, y:-getLineLength('OV', this.props.targetCancer, this.props.scoreName)},
                {x:this.props.patientScore, y:getLineLength(this.props.targetCancer, 'OV', this.props.scoreName)}
              ]}
-             a
+             labels={(d)=>getPercentile(d.y,this.props.targetCancer,this.props.scoreName,this.props.patientScore) + '%ile'}
+             labelComponent={<VictoryLabel renderInPortal/>}
             />
             <VictoryLine
              data = {[

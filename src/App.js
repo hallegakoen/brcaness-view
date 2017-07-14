@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Col, Jumbotron, Button, Form} from 'react-bootstrap';
+import {Col, Jumbotron, Button, Form, Modal} from 'react-bootstrap';
 import tcgaData from './Components/tcgaData.json';
 import ScoreDisplay from './Components/ScoreDisplay';
 
@@ -9,16 +9,16 @@ class App extends Component {
     super();
     this.state = {
       scores: {
-        hrd: '',
-        parpi7: '',
-        rps: '',
-        lst: '',
-        ai: '',
-        hrd_loh: ''
+        HRD: '',
+        PARPi7: '',
+        RPS: '',
+        LST: '',
+        AI: '',
+        LOH: ''
       },
       cancerType: '',
       colorcode: 'default',
-      showModal:'false'
+      showModal: false
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleScoreChange = this.handleScoreChange.bind(this);
@@ -75,50 +75,44 @@ class App extends Component {
             <Form inline>
               HRD:
               <input
-                bsSize="sm"
-                name="hrd"
+                name="HRD"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.hrd}/>
+                value={this.state.scores.HRD}/>
               PARPi-7:
               <input
-                bsSize="sm"
-                name="parpi7"
+                name="PARPi7"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.parpi7}/>
+                value={this.state.scores.PARPi7}/>
              RPS:
               <input
-                bsSize="sm"
-                name="rps"
+                name="RPS"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.rps}/>
+                value={this.state.scores.RPS}/>
               LST:
               <input
-                bsSize="sm"
-                name="lst"
+                name="LST"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.lst}/>
+                value={this.state.scores.LST}/>
               NtAI:
               <input
-                bsSize="sm"
-                name="ai"
+                name="AI"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.ai}/>
+                value={this.state.scores.AI}/>
               LOH:
               <input
-                bsSize="sm"
-                name="hrd_loh"
+                name="LOH"
                 type="number"
                 onChange={this.handleScoreChange}
-                value={this.state.scores.hrd_loh}/>
+                value={this.state.scores.LOH}/>
               </Form>
 
               <p/>
-              <input value="default" type="radio" checked="checked" name="colorcode"/>Default View
+              <input value="default" type="radio" defaultChecked name="colorcode"/>Default View
               <br/>
               <input value="percentSensitive" type="radio" name="colorcode"/>Show % platinum response at each score
               <br/>
@@ -128,6 +122,18 @@ class App extends Component {
         <Col xs = {12} sm = {6} md = {10} lg = {10}>
             <ScoreDisplay patientScores = {this.state.scores} targetCancer = {this.state.cancerType}/>
         </Col>
+
+        <Modal show={this.state.showModal} onHide={this.close}>
+    <Modal.Header closeButton>
+      <Modal.Title>Select Patient</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+      PatientTable
+    </Modal.Body>
+    <Modal.Footer>
+      <Button onClick={this.close}>Close</Button>
+    </Modal.Footer>
+  </Modal>
       </div>
     )
   }

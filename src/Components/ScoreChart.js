@@ -3,10 +3,37 @@ import React, {Component} from 'react';
 import tcgaData from './tcgaData.json';
 import {VictoryBar, VictoryAxis, VictoryChart, VictoryLine, VictoryLabel} from 'victory';
 
+
+
+const getCancerData = function(cancer) { //chanfe to function(filtersArray, score)
+  const cancerData = tcgaData.filter(function(e) {return e.cancer === cancer }); //filter tcga array into array of obj where element.cancer = cancer
+	return cancerData; //array
+}
+
+const filterData = function(query, sample, other) {
+	let probes = [];
+	let finalData = [];
+	const index = query.samples.findIndex(function(e) {return e === sample}) //index of patient sample
+  const patientProbe = query.probes[0][index] //patient's probe
+  for(let i = 0; i<query.probes[0].length; i++) {
+		if (query.probes[0][i] === patientProbe) {
+			probes.push(i)
+		}
+  }
+		const filteredData = probes.map(e => query.samples[e]);
+		filteredData.forEach(
+			function(e) {
+			const tcgaLocation = tcgaData.map(function(a) {return a.sample;}).indexOf(e);
+			if (tcgaLocation !== -1) {
+			  finalData.push(tcgaData[tcgaLocation]);
+		} })
+		console.log(finalData)
+}
+
 //get array of scores from tcgaData.json
-const getCancerScores = function(cancer, score) {
-  const cancerData = tcgaData.filter(function(e) {return e.cancer === cancer}); //add filtering
-  const cancerScores = cancerData.map((e) => e[score]);
+const getCancerScores = function(cancer, score) { //chanfe to function(filtersArray, score)
+  const filteredData = getCancerData(cancer);
+	const cancerScores = filteredData.filter(function(e) {return e[score] !== null}).map(e => e[score]);
   return cancerScores;
 }
 
@@ -51,6 +78,7 @@ const getChartData = function(cancer, refCancer, score) {
       chartData.push({
         score: ((min+i*binwidth) + min+(i+1)*binwidth)/2,
         frequency: targetScores.filter(x => (x-(min+i*binwidth))*(x-(min+(i+1)*binwidth)) < 0).length
+				//x = -3, min = -4, binwidth = 1. (1)*(-3-(-4+1))
       });
     }
     return chartData;
@@ -81,15 +109,19 @@ const getBinWidth = function(targetCancer, refCancer, scoreName, score) {
 class ScoreChart extends Component {
 
 //update if score changes or if cancer type changes to a valid tcga entry
-  shouldComponentUpdate(nextProps, nextState) {
-    let chartData = getCancerScores(nextProps.targetCancer, this.props.scoreName);
-    return (
-      this.props.patientScore !== nextProps.patientScore
-      || chartData.length !== 0
-    );
-  }
+  // shouldComponentUpdate(nextProps, nextState) {
+  //   let chartData = getCancerScores(nextProps.targetCancer, this.props.scoreName);
+  //   return (
+  //     this.props.patientScore !== nextProps.patientScore
+  //     || chartData.length !== 0
+	// 		|| this.props.queriedFilter !== nextProps.queriedFilter
+  //   );
+  // }
 
   render() {
+		console.log(this.props.queriedTarget, 'hi');
+		if (this.props.queriedTarget) {filterData(this.props.queriedTarget, this.props.patientSample)};
+    const cancerData = getCancerData(this.props.targetCancer);
     if (isNaN(this.props.patientScore)) return(null);
     if (this.props.targetCancer === '') return(null);
     else return (
@@ -107,6 +139,8 @@ class ScoreChart extends Component {
                 data: {
                   fill:"navajowhite",
                   width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore),
+									stroke: "black",
+									strokeWidth: 1
                 }
               }}
         />
@@ -118,6 +152,8 @@ class ScoreChart extends Component {
                 data: {
                   fill: "tomato",
                   width: getBinWidth(this.props.targetCancer, 'OV', this.props.scoreName, this.props.patientScore),
+									stroke: "black",
+									strokeWidth: 1
                 }
               }}
             />

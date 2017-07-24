@@ -4,10 +4,10 @@ import ScoreChart from './ScoreChart';
 const cutoffScores = {
   HRD: 42,
   PARPi7: 1.03,
-  RPS: 0,
-  LST: 0,
-  AI: 0,
-  LOH: 0
+  RPS: '',
+  LST: '',
+  AI: '',
+  LOH: ''
 }
 
 const sortCharts = function(scores) {
@@ -21,6 +21,7 @@ const sortCharts = function(scores) {
 }
 
 const getPanelColor = function(patientScores, score) {
+  if (cutoffScores[score] === '') return 'info';
   if (patientScores[score] >= cutoffScores[score]) return 'danger';
   else return 'info';
 }
@@ -39,7 +40,11 @@ class ScoreDisplay extends Component {
           scoreName = {k}
           cutoffScore = {cutoffScores[k]}
           panelColor = {getPanelColor(this.props.patientScores,k)}
-          key = {k}/>
+          key = {k}
+          queriedTarget = {this.props.queriedTarget}
+          queriedRef = {this.props.queriedRef}
+          patientSample = {this.props.patientSample}
+          />
       );
     }
 

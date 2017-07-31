@@ -64,9 +64,8 @@ class App extends Component {
 		  .subscribe(result => this.setState({targetSamples: result}));
 
 		const refSamples = tcgaData.filter(function(e) {return e.sample !== ""})
-			.filter(function(e) {return e.cancer === 'OV'}, this)
+			.filter(function(e) {return e.cancer === 'OV'})
 			.map((e) => e.sample)
-		this.setState({filter: e.target.value});
 		codedPhenotype(pancanHub, e.target.name, refSamples, [e.target.value])
 			.subscribe(result => this.setState({refSamples: result}));
 	}
@@ -76,6 +75,8 @@ class App extends Component {
 	  this.setState({
 	    patient: matchingData.patient,
 	    cancer: matchingData.cancer,
+			targetSamples: tcgaData.filter(function(e) {return e.cancer === matchingData.cancer}),
+			refSamples: tcgaData.filter(function(e) {return e.cancer === 'OV'}),
 	    samples: {
 	      sample: matchingData.sample,
 	      scores: {
@@ -127,7 +128,13 @@ render() {
             </Jumbotron>
         </Col>
         <Col xs = {12} sm = {6} md = {10} lg = {10}>
-            <ScoreDisplay patientSample = {this.state.samples.sample} patientScores = {this.state.samples.scores} targetCancer = {this.state.cancer} subtypeSelected = {this.state.subtypeSelected} queriedTarget = {this.state.targetSamples} queriedRef = {this.state.refSamples}/>
+            <ScoreDisplay
+						patientSample = {this.state.samples.sample}
+						patientScores = {this.state.samples.scores}
+						targetCancer = {this.state.cancer}
+						subtypeSelected = {this.state.subtypeSelected}
+						target = {this.state.targetSamples}
+						reference = {this.state.refSamples}/>
         </Col>
 
       </div>

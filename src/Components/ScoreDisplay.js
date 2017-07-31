@@ -41,8 +41,8 @@ class ScoreDisplay extends Component {
           cutoffScore = {cutoffScores[k]}
           panelColor = {getPanelColor(this.props.patientScores,k)}
           key = {k}
-          queriedTarget = {this.props.queriedTarget}
-          queriedRef = {this.props.queriedRef}
+          target = {this.props.target}
+          reference = {this.props.reference}
           patientSample = {this.props.patientSample}
           />
       );

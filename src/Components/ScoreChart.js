@@ -1,47 +1,8 @@
 import {Panel} from 'react-bootstrap';
 import React, {Component} from 'react';
-import tcgaData from './tcgaData.json';
+import data from './data.json';
 import {VictoryBar, VictoryAxis, VictoryChart, VictoryLine, VictoryLabel} from 'victory';
 
-
-
-const getData = function(query, sample) {
-
-  if (query && query.samples)
-	{let probes = [];
-	let finalData = [];
-	const index = query.samples.findIndex(function(e) {return e === sample}); //index of patient sample
-	if (index === -1) {return query
-	} else {
-  const patientProbe = query.probes[0][index]; //patient's probe
-  for(let i = 0; i<query.probes[0].length; i++) {
-		if (query.probes[0][i] === patientProbe) {
-			probes.push(i)
-		}
-  }
-		const filteredData = probes.map(e => query.samples[e]);
-		filteredData.forEach(
-			function(e) {
-			const tcgaLocation = tcgaData.map(function(a) {return a.sample;}).indexOf(e);
-			if (tcgaLocation !== -1) {
-			  finalData.push(tcgaData[tcgaLocation]);
-		} })
-		return(finalData);
-	}}
-	else return query;
-}
-
-//get array of scores from array of objects
-const getCancerScores = function(cancer, sample, score) {
-	let filteredData = [];
-	if (cancer && sample) {
-		filteredData = getData(cancer, sample); //works here
-	}
-	console.log('filteredData test', filteredData);
-	let cancerScores = filteredData.filter(function(e) {return (e[score] != null)}).map(e => e[score]); //e[score] is undefined
-	console.log('canc', score, cancerScores);
-  return cancerScores
-}
 
 const getPercentile = function(y, targetScores, refScores, scoreValue) {
   let data;
@@ -52,30 +13,20 @@ const getPercentile = function(y, targetScores, refScores, scoreValue) {
   return (100*data.indexOf(closestValue)/data.length).toFixed(2);
 }
 
-//bin array for VictoryBar
-const getChartData = function(targetScores, refScores) {
-  //rewrite minscore and binwidth
-    const targetMin = Math.min.apply(null, targetScores);
-    const refMin = Math.min.apply(null, refScores);
-    const min = Math.min(targetMin, refMin);
-    const targetMax = Math.max.apply(null, targetScores);
-    const refMax = Math.max.apply(null, refScores);
-    const max = Math.max(targetMax, refMax);
-    const binwidth = (max-min)/15;
+const getChartData = function(targetScores, min, binwidth) {
     let chartData = [];
     for (let i=0; i<15; i++) {
       chartData.push({
         score: ((min+i*binwidth) + min+(i+1)*binwidth)/2,
         frequency: targetScores.filter(x => (x-(min+i*binwidth))*(x-(min+(i+1)*binwidth)) < 0).length
-				//x = -3, min = -4, binwidth = 1. (1)*(-3-(-4+1))
       });
     }
+    console.log ("tscores", targetScores, "min",min, "bw",binwidth);
     return chartData;
+
   }
 
-// get y-coordinates for patient score vline
-const getLineLength = function(targetScores, refScores) {
-  const chartData = getChartData(targetScores, refScores);
+const getLineLength = function(chartData) {
   let scoreFrequencies = chartData.map (function(i) {return (i.frequency)});
   const lineLength = (Math.max.apply(null,scoreFrequencies) * 1.2);
   return lineLength;
@@ -83,69 +34,115 @@ const getLineLength = function(targetScores, refScores) {
 
 //make VictoryBar more histogram-ish by removing gaps between bars
 const getBinWidth = function(targetScores, refScores, score) {
-  const targetMin = Math.min.apply(null, targetScores);
-  const targetMax =  Math.max.apply(null, targetScores);
-  const referenceMax =  Math.max.apply(null, refScores)
-  const referenceMin = Math.min.apply(null, refScores);
+  const targetMin = Math.min.apply(0, targetScores);
+  const targetMax =  Math.max.apply(0, targetScores);
+  const referenceMax =  Math.max.apply(0, refScores)
+  const referenceMin = Math.min.apply(0, refScores);
   const range = Math.max(targetMax, referenceMax, score) -
                 Math.min(targetMin, referenceMin, score);
   const binwidth = 350*(Math.max(targetMax, referenceMax) - Math.min(targetMin, referenceMin))/(15*range);
-	console.log('binwidth test', binwidth);
   return binwidth;
+}
+
+const getBinSize = function(targetScores, refScores, score, min) {
+    const targetMax =  Math.max.apply(null, targetScores);
+    const referenceMax =  Math.max.apply(null, refScores);
+    const max = Math.max(targetMax, referenceMax, score);
+    return (max-min)/15;
+}
+
+const getMin = function(targetScores, refScores, score) {
+    const targetMin = Math.min.apply(null, targetScores);
+    const referenceMin = Math.min.apply(null, refScores);
+    const min =   Math.min(targetMin, referenceMin, score, 0);
+    return min;
 }
 
 class ScoreChart extends Component {
 
-//update if score changes or if cancer type changes to a valid tcga entry
-  // shouldComponentUpdate(nextProps, nextState) {
-  //   let chartData = getCancerScores(nextProps.targetCancer, this.props.scoreName);
-  //   return (
-  //     this.props.patientScore !== nextProps.patientScore
-  //     || chartData.length !== 0
-	// 		|| this.props.queriedFilter !== nextProps.queriedFilter
-  //   );
-  // }
+  constructor() {
+    super();
+    this.getCancerScores = this.getCancerScores.bind(this);
+  }
+
+  getCancerScores(cancer, score, brcaMutations) {
+    let filters = [];
+
+    Object.keys(this.props.filters).forEach(function(key) {
+      if (this.props.filters[key] == true) {
+        filters.push(key);
+      }
+    }, this);
+
+    let defaultData = data.filter(function(e) {
+      if (brcaMutations === null) return (e.acronym === cancer && e[score] !== null);
+      if (brcaMutations === 'BRCA1') return (e.acronym === cancer && e[score] !== null) && e.BRCA1 === 1;
+      if (brcaMutations === 'BRCA2') return (e.acronym === cancer && e[score] !== null && e.BRCA2 === 1);
+    });
+
+    filters.forEach(function(filter) {
+      if (filter === 'subtypeSelected' && cancer === this.props.targetCancer) {
+        defaultData = defaultData.filter(function(e) {return (e[filter] === this.props.subtypeSelected)}, this)
+      } else if (filter !== 'subtypeSelected') {
+        defaultData = defaultData.filter(function(e) {return (e[filter] === 1)})
+      };
+    }, this);
+
+    const cancerScores = defaultData.map((e) => e[score]);
+
+    return cancerScores;
+  }
 
   render() {
-		const targetScores = getCancerScores(this.props.target, this.props.patientSample, this.props.scoreName);
-		const refScores = getCancerScores(this.props.reference, this.props.patientSample, this.props.scoreName);
-		console.log('targetscoretest', targetScores);
-		if (this.props.target.samples) {getData(this.props.target, this.props.patientSample)};
+
+    const targetScores = this.getCancerScores(this.props.targetCancer, this.props.scoreName, null);
+    const refScores = this.getCancerScores('OV', this.props.scoreName, null);
+    const min = getMin(targetScores, refScores, this.props.patientScore);
+    const binSize = getBinSize(targetScores, refScores, this.props.patientScore, min);
+    const targetBrca1Scores = this.getCancerScores(this.props.targetCancer, this.props.scoreName, 'BRCA1');
+    const refBrca1Scores = this.getCancerScores('OV', this.props.scoreName, 'BRCA1');
+    const targetBrca2Scores = this.getCancerScores(this.props.targetCancer, this.props.scoreName, 'BRCA2').concat(targetBrca1Scores);
+    const refBrca2Scores = this.getCancerScores('OV', this.props.scoreName, 'BRCA2').concat(refBrca1Scores);
+    const targetBrca1Chart = getChartData(targetBrca1Scores, min, binSize);
+    const targetBrca2Chart = getChartData(targetBrca2Scores, min, binSize);
+    const chartData = getChartData(targetScores, min, binSize);
+    const refChartData = getChartData(refScores, min, binSize);
+    const refBrca1Chart = getChartData(refBrca1Scores, min, binSize);
+    const refBrca2Chart = getChartData(refBrca2Scores, min, binSize);
+    const binwidth = getBinWidth(targetScores, refScores, this.props.patientScore);
+
     if (isNaN(this.props.patientScore)) return(null);
     if (this.props.targetCancer === '') return(null);
-    else return (
+    if (this.props.filters.BRCA1 || this.props.filters.BRCA2) return (
       <div>
         <Panel
-          header = {this.props.scoreLabel + ": " + this.props.patientScore}
+          header = {this.props.scoreName + ": " + this.props.patientScore}
           style={{width: '45%', float: 'left', margin: 5}}
           bsStyle={this.props.panelColor}>
           <VictoryChart>
             <VictoryBar
-              data= {getChartData(targetScores, refScores)}
+              data= {chartData}
               x="score"
               y="frequency"
               style={{
                 data: {
-                  fill:"navajowhite",
-                  width: getBinWidth(targetScores, refScores, this.props.patientScore),
-									stroke: "black",
-									strokeWidth: 1
+                  fill:"gray",
+                  width:binwidth
                 }
               }}
         />
             <VictoryBar
-              data= {getChartData(refScores, targetScores)}
-              x="score"
+              data= {refChartData}
+              x= "score"
               y= {(d) => -(d.frequency)}
               style={{
                 data: {
-                  fill: "tomato",
-                  width: getBinWidth(targetScores, refScores, this.props.patientScore),
-									stroke: "black",
-									strokeWidth: 1
+                  fill: "navajowhite",
+                  width:binwidth
                 }
               }}
             />
+
             <VictoryAxis
               style={{axis:{width:450}}}
               domainPadding={0}
@@ -158,24 +155,112 @@ class ScoreChart extends Component {
             />
             <VictoryLine
              data = {[
-               {x:this.props.patientScore, y:-getLineLength(refScores, targetScores)},
-               {x:this.props.patientScore, y:getLineLength(targetScores, refScores)}
+               {x:this.props.patientScore, y:-getLineLength(refChartData)},
+               {x:this.props.patientScore, y:getLineLength(chartData)}
              ]}
              labels={(d)=>getPercentile(d.y, targetScores, refScores, this.props.patientScore) + '%ile'}
              labelComponent={<VictoryLabel renderInPortal/>}
+             />
+          </VictoryChart>
+        </Panel>
+      </div>
+
+    )
+
+
+    else return (
+      <div>
+        <Panel
+          header = {this.props.scoreName + ": " + this.props.patientScore}
+          style={{width: '45%', float: 'left', margin: 5}}
+          bsStyle={this.props.panelColor}>
+          <VictoryChart>
+            <VictoryBar
+              data= {chartData}
+              x="score"
+              y="frequency"
+              style={{
+                data: {
+                  fill:"gray",
+                  width:binwidth
+                }
+              }}
+        />
+            <VictoryBar
+              data= {refChartData}
+              x= "score"
+              y= {(d) => -(d.frequency)}
+              style={{
+                data: {
+                  fill: "navajowhite",
+                  width:binwidth
+                }
+              }}
+            />
+            <VictoryBar
+              data= {targetBrca2Chart}
+              x="score"
+              y="frequency"
+              style={{
+                data: {
+                  fill:"blue",
+                  width:binwidth
+                }
+              }}
+        />
+        <VictoryBar
+              data= {refBrca2Chart}
+              x= "score"
+              y= {(d) => -(d.frequency)}
+              style={{
+                data: {
+                  fill: "blue",
+                  width:binwidth
+                }
+              }}
+            /> 
+            <VictoryBar
+              data= {targetBrca1Chart}
+              x="score"
+              y="frequency"
+              style={{
+                data: {
+                  fill:"red",
+                  width:binwidth
+                }
+              }}
+        />
+            <VictoryBar
+              data= {refBrca1Chart}
+              x= "score"
+              y= {(d) => -(d.frequency)}
+              style={{
+                data: {
+                  fill: "red",
+                  width:binwidth
+                }
+              }}
+            />
+
+            <VictoryAxis
+              style={{axis:{width:450}}}
+              domainPadding={0}
+              axisLabelComponent={<VictoryLabel text={this.props.scoreName} x={425} dy={-30} textAnchor="start"/>}
+            />
+            <VictoryAxis
+             dependentAxis
+             tickLabelComponent={<VictoryLabel text={(datum) => Math.abs(datum)}
+             />}
             />
             <VictoryLine
              data = {[
-               {x:this.props.cutoffScore, y:-getLineLength(refScores, targetScores)},
-               {x:this.props.cutoffScore, y:getLineLength(targetScores, refScores)}
-               ]}
-             style={{
-               data: {
-                 stroke: "gray",
-                 strokeWidth: 0.75
-               }
-             }}
-            />
+               {x:this.props.patientScore, y:-getLineLength(refChartData)},
+               {x:this.props.patientScore, y:getLineLength(chartData)}
+             ]}
+             labels={(d)=>getPercentile(d.y, targetScores, refScores, this.props.patientScore) + '%ile'}
+             labelComponent={<VictoryLabel renderInPortal/>}
+             />
+
           </VictoryChart>
         </Panel>
       </div>

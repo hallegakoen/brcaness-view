@@ -1,140 +1,121 @@
 import React, { Component } from 'react';
-import {Col, Jumbotron, Button, Form, Modal, Table} from 'react-bootstrap';
+import {Col, Jumbotron, Table} from 'react-bootstrap';
 import tcgaData from './Components/tcgaData.json';
+import data from './Components/data.json'
 import ScoreDisplay from './Components/ScoreDisplay';
-import PatientTable from './Components/PatientTable';
-
-var xenaQuery = require('ucsc-xena-client/dist/xenaQuery');
-var Rx = require('rxjs');
-var pancanHub = 'https://pancanatlas.xenahubs.net';
-var phenotypeDense = 'TCGA_phenotype_denseDataOnlyDownload.tsv'
-var subtype = 'TCGASubtype.20170308.tsv';
-var subtypeSelected = 'Subtype_Selected';
-var age = 'age_at_initial_pathologic_diagnosis';
-var gender = 'gender';
-
-
-function codedPhenotype(hub, dataset, samples, fields) {
-	return Rx.Observable.zip(
-		xenaQuery.datasetProbeValues(hub, dataset, samples, fields),
-		xenaQuery.fieldCodes(hub, dataset, fields),
-		function (positionAndProbes, codes) {
-			return {
-				samples: samples,
-				probes: positionAndProbes[1], // There's no position for phenotype
-				codes: codes
-			};
-		})
-}
-
+import {VictoryLegend, VictoryChart} from 'victory';
 
 class App extends Component {
   constructor() {
     super();
     this.state = {
-      patient: '',
-      cancer: '',
-      samples: {
-        sample: '',
-        scores: {
+      sample: '',
+      acronym: '',
+			subtypeSelected: '',
+			BRCA1: '',
+			BRCA2: '',
+      scores: {
           HRD: '',
-          PARPi7: '',
-          RPS: '',
           LST: '',
           AI: '',
           LOH: '',
-          signature3: ''
-        }
       },
-      colorcode: 'default',
-      filter: '',
-			targetSamples: '',
-			refSamples: ''
+      filters: {
+				BRCA1: false,
+				BRCA2: false,
+				subtypeSelected: false
+			}
     };
-    this.handlePatientSelect = this.handlePatientSelect.bind(this);
+
+    this.handleSelect = this.handleSelect.bind(this);
     this.handleFilter = this.handleFilter.bind(this);
   }
 
-	handleFilter(e) {
-		const targetSamples = tcgaData.filter(function(e) {return e.sample !== ""})
-		  .filter(function(e) {return e.cancer === this.state.cancer}, this)
-			.map((e) => e.sample)
-		this.setState({filter: e.target.value});
-		codedPhenotype(pancanHub, e.target.name, targetSamples, [e.target.value])
-		  .subscribe(result => this.setState({targetSamples: result}));
-
-		const refSamples = tcgaData.filter(function(e) {return e.sample !== ""})
-			.filter(function(e) {return e.cancer === 'OV'})
-			.map((e) => e.sample)
-		codedPhenotype(pancanHub, e.target.name, refSamples, [e.target.value])
-			.subscribe(result => this.setState({refSamples: result}));
-	}
-
-	handlePatientSelect(e) {
-	  const matchingData = tcgaData.find(element => element.patient + ' (' + element.cancer + ')' === e.target.value);
+	handleSelect(e) {
+	  const x = data.find(element => element.sample + ' (' + element.acronym + ' ' + element.subtypeSelected + ')' === e.target.value);
 	  this.setState({
-	    patient: matchingData.patient,
-	    cancer: matchingData.cancer,
-			targetSamples: tcgaData.filter(function(e) {return e.cancer === matchingData.cancer}),
-			refSamples: tcgaData.filter(function(e) {return e.cancer === 'OV'}),
-	    samples: {
-	      sample: matchingData.sample,
-	      scores: {
-	        HRD: matchingData.HRD,
-	        PARPi7: matchingData.PARPi7,
-	        RPS: matchingData.RPS,
-	        LST: matchingData.LST,
-	        AI: matchingData.AI,
-	        LOH: matchingData.LOH,
-	        signature3: matchingData.signature3
-	      }
-	    }
+			sample: x.sample,
+      acronym: x.acronym,
+			subtypeSelected: x.subtypeSelected,
+      scores: {
+          HRD: x.HRD,
+          LST: x.LST,
+          AI: x.AI,
+          LOH: x.LOH,
+      },
+      BRCA1: '',
+			BRCA2: ''
 	  })
 	}
 
+  handleFilter(e) {
+  const filter = e.target.value
+	const newState = !this.state.filters[e.target.value]
+  this.setState(({filters}) => ({filters: {
+    ...filters,
+    [filter]: newState
+  }}));
+  }
+// extra parentheses ?
+
 render() {
-  const patientList = tcgaData.map((code)=><option key={tcgaData.indexOf(code)}>{code.patient} ({code.cancer})</option>)
+  const sampleList = data.filter(function(sample) {return sample.HRD}).map((sample)=><option key={data.indexOf(sample)}>{sample.sample} ({sample.acronym} {sample.subtypeSelected})</option>)
     return (
       <div>
         <Col xs = {12} sm = {6} md = {2} lg = {2}>
             <Jumbotron>
-            Patient:
+            Sample:
             <select
-              name="patient"
+              name="sample"
               type="string"
-              onChange={this.handlePatientSelect}
-              value={this.state.patient + ' (' + this.state.cancer + ')'}>
-              <option> -- select TCGA patient -- </option>
-              {patientList}
+              onChange={this.handleSelect}
+              value={this.state.sample + ' (' + this.state.acronym + ' ' + this.state.subtypeSelected + ')'}>
+              <option> -- select TCGA sample -- </option>
+              {sampleList}
             </select>
             <br/>
-            Filter by patient's:'
+
+
 
 						<p/>
-
-							<input value={age} type="radio" onChange={this.handleFilter} name={phenotypeDense}/>age
+						  <fieldset>
+              <legend>Filter samples</legend>
+							<input value="BRCA1" type="checkbox" onChange={this.handleFilter} name="filter"/>
+							<label htmlFor="BRCA1">Display somatic BRCA1 mutants</label>
 							<br/>
-							<input value={gender} type="radio" onChange={this.handleFilter} name={phenotypeDense}/>gender
+              <p/>
+							<input value="BRCA2" type="checkbox" onChange={this.handleFilter} name="filter"/>
+							<label htmlFor="BRCA2">Display somatic BRCA2 mutants</label>
 							<br/>
-							<input value={subtypeSelected} type="radio" onChange={this.handleFilter} name={subtype}/>subtype
+              <p/>
+							<input value="subtypeSelected" type="checkbox" onChange={this.handleFilter} name="filter"/>
+              <label htmlFor="subtypeSelected">Display samples with same subtype as patient</label>
 
+							</fieldset>
             <p/>
 
-              <input value="default" type="radio" defaultChecked name="colorcode"/>Default View
-              <br/>
-              <input value="percentSensitive" type="radio" name="colorcode"/>Show % platinum response at each score
-              <br/>
-              <input value="sensitivity" type="radio" name="colorcode"/>Show platinum response at each score
+              <VictoryLegend x={125} y={50}
+                  title="Legend"
+                centerTitle
+                gutter={20}
+                style={{ border: { stroke: "black" }, title: {fontSize: 20 } }}
+                data={[
+                  { name: "somatic BRCA1 mutants", symbol: { fill: "red" } },
+                  { name: "somatic BRCA2 mutants", symbol: { fill: "blue" } },
+                  { name: "Target Dataset: TCGA-" + this.state.acronym, symbol: { fill: "gray" } },
+                  { name: "Reference Dataset: TCGA-OV", symbol: { fill: "navajowhite" } }
+                ]}
+              />
+
             </Jumbotron>
         </Col>
         <Col xs = {12} sm = {6} md = {10} lg = {10}>
             <ScoreDisplay
-						patientSample = {this.state.samples.sample}
-						patientScores = {this.state.samples.scores}
-						targetCancer = {this.state.cancer}
+						sample = {this.state.sample}
+						patientScores = {this.state.scores}
+						targetCancer = {this.state.acronym}
 						subtypeSelected = {this.state.subtypeSelected}
-						target = {this.state.targetSamples}
-						reference = {this.state.refSamples}/>
+						filters = {this.state.filters} />
         </Col>
 
       </div>

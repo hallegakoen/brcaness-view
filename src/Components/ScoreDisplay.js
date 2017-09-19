@@ -1,51 +1,25 @@
 import React, { Component } from 'react';
 import ScoreChart from './ScoreChart';
 
-const cutoffScores = {
-  HRD: 42,
-  PARPi7: 1.03,
-  RPS: '',
-  LST: '',
-  AI: '',
-  LOH: ''
-}
-
-const sortCharts = function(scores) {
-  const patientScores = scores;
-  let keys = Object.keys(patientScores).sort(function(a,b) {
-    if (patientScores[a] < cutoffScores[a] && patientScores[b] >= cutoffScores[b]) return 1;
-    if (patientScores[a] >= cutoffScores[a] && patientScores[b] < cutoffScores[b]) return -1;
-    else return 0;
-  });
-  return keys;
-}
-
-const getPanelColor = function(patientScores, score) {
-  if (cutoffScores[score] === '') return 'info';
-  if (patientScores[score] >= cutoffScores[score]) return 'danger';
-  else return 'info';
-}
 
 class ScoreDisplay extends Component {
   render() {
-    let keys = sortCharts(this.props.patientScores);
+    let scores = this.props.patientScores;
+    let scoreList = Object.keys(scores)
     let charts = [];
-    for(let i=0; i<keys.length; i++){
-      const k = keys[i];
-      charts.push(
-        <ScoreChart
-          patientScore = {parseFloat(this.props.patientScores[k])}
-          targetCancer = {this.props.targetCancer}
-          scoreLabel = {k}
-          scoreName = {k}
-          cutoffScore = {cutoffScores[k]}
-          panelColor = {getPanelColor(this.props.patientScores,k)}
-          key = {k}
-          target = {this.props.target}
-          reference = {this.props.reference}
-          patientSample = {this.props.patientSample}
+    for(let i=0; i<scoreList.length; i++) {
+        let scoreName = scoreList[i];
+        charts.push(
+          <ScoreChart
+            patientScore = {parseFloat(scores[scoreName])}
+            targetCancer = {this.props.targetCancer}
+            scoreName = {scoreName}
+            key = {i}
+            patientSample = {this.props.sample}
+            filters = {this.props.filters}
+            subtypeSelected = {this.props.subtypeSelected}
           />
-      );
+        );
     }
 
     return(

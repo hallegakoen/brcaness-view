@@ -61,9 +61,9 @@ render() {
   const sampleList = data.filter(function(sample) {return sample.HRD}).map((sample)=><option key={data.indexOf(sample)}>{sample.sample} ({sample.acronym} {sample.subtypeSelected})</option>)
     return (
       <div>
-        <Col xs = {12} sm = {6} md = {2} lg = {2}>
+        <Col xs = {12} sm = {6} md = {3} lg = {3}>
             <Jumbotron>
-            Sample:
+            <legend>Select a sample</legend>
             <select
               name="sample"
               type="string"
@@ -78,21 +78,21 @@ render() {
 
 						<p/>
 						  <fieldset>
-              <legend>Filter samples</legend>
+              <legend>Filter datasets</legend>
 							<input value="BRCA1" type="checkbox" onChange={this.handleFilter} name="filter"/>
-							<label htmlFor="BRCA1">Display somatic BRCA1 mutants</label>
+							<label htmlFor="BRCA1">Somatic BRCA1 mutants only</label>
 							<br/>
               <p/>
 							<input value="BRCA2" type="checkbox" onChange={this.handleFilter} name="filter"/>
-							<label htmlFor="BRCA2">Display somatic BRCA2 mutants</label>
+							<label htmlFor="BRCA2">Somatic BRCA2 mutants only</label>
 							<br/>
               <p/>
 							<input value="subtypeSelected" type="checkbox" onChange={this.handleFilter} name="filter"/>
-              <label htmlFor="subtypeSelected">Display samples with same subtype as patient</label>
+              <label htmlFor="subtypeSelected">Samples with patient's subtype only</label>
 
 							</fieldset>
             <p/>
-
+             <legend>Legend</legend>
               <VictoryLegend x={125} y={50}
                   title="Legend"
                 centerTitle
@@ -108,7 +108,7 @@ render() {
 
             </Jumbotron>
         </Col>
-        <Col xs = {12} sm = {6} md = {10} lg = {10}>
+        <Col xs = {12} sm = {6} md = {9} lg = {9}>
             <ScoreDisplay
 						sample = {this.state.sample}
 						patientScores = {this.state.scores}

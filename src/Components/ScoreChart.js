@@ -218,7 +218,7 @@ class ScoreChart extends Component {
                   width:binwidth
                 }
               }}
-            /> 
+            />
             <VictoryBar
               data= {targetBrca1Chart}
               x="score"

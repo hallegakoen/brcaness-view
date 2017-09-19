@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {Col, Jumbotron, Table} from 'react-bootstrap';
-import tcgaData from './Components/tcgaData.json';
-import data from './Components/data.json'
+import data from './Components/data.json';
 import ScoreDisplay from './Components/ScoreDisplay';
 import {VictoryLegend, VictoryChart} from 'victory';
 
